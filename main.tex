@@ -1,0 +1,1664 @@
+\documentclass[11pt,oneside,a4paper]{scrartcl}
+
+%%% other useful and often used packages
+\usepackage{amsmath,amssymb} %,bbm,amsbsy,bm}
+%\let\proof\relax
+%\let\endproof\relax
+%\usepackage{amsthm}
+%\usepackage{mathtools}
+\usepackage{color}
+\usepackage{url}
+\usepackage{hyperref}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+%\usepackage{biblatex}
+%\addbibresource{bibliography.bib}
+%\addbibresource{references.bib}
+
+
+\newcommand{\valeriy}[1]{{\color{blue}\textit{Valeriy: #1}}}
+
+\begin{document}
+
+\title{ICML 2018 Field Report}
+\author{Valeriy Khakhutskyy}
+\date{last update: \today}
+\maketitle
+
+
+\section{Tuesday: Tutorials}
+\label{ch:tuesday}
+
+\subsection{Imitation learning}
+\label{sec:tutor-imit-learn}
+
+\subsubsection{Introduction and Behavior Cloning by Huang M. Le}
+\label{sec:intr-behav-clon}
+
+
+Problem: what is the best learning algorithm if you have a
+demonstrator that can provide corrections on your model (expert)
+
+
+The registration line was huge such that we missed the motivation
+examples. Something with shadowing soccer players and training robot
+hand to perform multiple tasks like stacking blocks on top of each
+other.
+
+Behavioral cloning: reduction to supervised learning. $P^*$ distribution
+of states visited by expert. Learning objective: chop up the
+state-action pairs from the expert, do the regression to minimize
+expected loss.
+
+Assuming prefect imitation so far learn to continue imitation
+perfectly. $$\arg\min_\theta E_s,a (a, pi_{theta}(s))$$
+
+minimize 1/step deviation along the trajectory path provided by an
+expert.
+
+Difference of BC to general imitation learning:  In GIL the
+distribution of policy pi* depends on roll-out
+$$ \arg\min_{\theta} E_{\ldots} L(pi*(s), \pi_\theta(s))$$
+
+
+BC assumes IID samples from $P^*$. Problem is extrapolation to new
+states we didn't visit before, hence undefined behavior.
+
+Advantages: simplicity and efficiency. Use it when 1/step deviation
+not too bad, learn reactive behavior, trajectories cover state space.
+
+Not to use when long-term objectives are involved, or 1-step
+deviations may be dramatic.
+
+Inverse RL train reward function and apply RL to maximize the reward
+function, assumes that learning the reward function from demonstration
+is more statistically efficient than to learn the policy directly.
+
+Learning reduction: reduce $A\rightarrow B$ where $A$ has $a^*(s)$ and $B$ has simple $a^*$
+in the loss function. Can we deduce some theoretic results on $A$ from
+$B$? $B$ is behavior cloning then.
+
+Direct policy learning: collect demonstration $\rightarrow$
+supervised learning $\rightarrow$
+roll-out in environment $\rightarrow$ collect demonstration...
+
+Sequential learning reduction: collection trajectories, estimation
+state distribution P, collect interactive feedback pi(s) and then:
+\begin{itemize}
+\item data aggregation> train $\pi_m$ on $P_1 \bigcup \ldots P_m$
+  (DAgger)
+
+\item policy aggregation: train $pi_m$ on $P_m$ and then combine
+$\pi$s using exponential smoothing (SEARN)
+\end{itemize}
+
+\subsubsection{Inverse Reinforcement Learning by Yisong Yue}
+\label{sec:inverse-reinf-learn}
+
+Challenge: RL assumes that reward function is given. Often RF is not
+clear though.
+
+Example from OpenAI: boot learned to cheat the system by going in
+circles and get bigger reward that to accomplish the driving task.
+
+Recipe:
+\begin{itemize}
+\item Expert demonstration,
+\item leaning reward function parameterized with theta
+\item  given learned RF learn policy
+\end{itemize}
+
+continue until convergence.
+
+Inverse RL is fundamentally ill-posed.
+
+Solutions for model-given formulations:
+\begin{itemize}
+\item  relax finding reward function \cite{abbeel2004apprenticeship}
+
+\item game theoretic formulation \cite{NIPS2007_3293}
+\end{itemize}
+Known dynamics, RL oracle available, reward function is linear in $\theta$
+
+Due to linearity of reward function, feature matching implies
+optimality (?).
+
+To deal with ill-posed problem (which policy is optimal?), introduce regularization. IN
+particular he explains maximum entropy. ME principle: choose
+trajectories distribution that satisfied the data without
+over-committing (by solving a constrained optimization problem). This
+leads to distributions in exponential family. Partition function seems
+not to be a problem.
+
+Moving from model-given to model-free setting. Means interacting with
+a simulator etc.
+
+Reward function is given by a neural network. Partition function in
+max entropy formulation becomes an issue. Hence use sampling to
+estimate the gradient of the likelihood using MCMC. (Finn et al. ICML
+16) Which proposal distribution to use?
+
+\begin{itemize}
+\item Generate samples by preventing the policy form changing too
+  rapidly
+
+\item update policy take only 1 policy optimization step
+\end{itemize}
+Instead of solving full RL problem in every iteration, use only 1-step
+RL. Hence, problems with larger state space can be addressed.
+
+  Hence very similar to GANs. (Ho \& Emon NIPS
+  16)\footnote{Application for autonomous driving}
+
+  $$min_pi \textrm{distance}(d^{\pi^*}, d^{\pi}) - \lambda H(\pi)$$
+
+
+\valeriy{I think imitation learning can be wonderfully used in the car
+  using driver as expert demonstrator}  
+
+  \subsubsection{Structured Prediction}
+\label{sec:struct-pred}
+
+Learn decision functions, e.g. for generating natural language
+sentences.
+
+Basic ingredient for structure prediction
+\begin{itemize}
+\item deal with distributional drift
+  
+\item imitation loss compatible with structure prediction loss: reduced
+  cost-sensitive classification loss
+  
+\item efficiency
+  
+\end{itemize}
+
+Can be somehow reduced to submodular optimization problem where
+submodular function describe the set of policies. Hence than you can
+use greedy algorithm. (???)
+
+Learning to search: We solve integer optimization problems to get sub-optimal
+solutions. Than use exploration search like $\varepsilon$-greedy to learn better
+results than the expert (Chang et al. ICML 2015, Learning to Search
+Better than you teacher)
+
+Multi-step time-series prediction (Venkatrama et al. AAAI 2015): learn
+$\pi$ on time series data, in put is previous prediction, sequence
+prediction special case.
+
+\subsubsection{Imitation learning with multiple objectives}
+\label{sec:imit-learn-with}
+
+Here Huang talked about multiple application and specific methods in
+imitation learning. I noted just those that seemed interesting in the
+context of AD.
+
+\paragraph{Safe imitation learning for autonomous driving (Zhang \& Cho AAAI 17)}
+
+How to insure safe behavior in the car? Train a separate classifier
+on frames that predicts how likely the current policy is going to
+deviate from expert. If classifier return 1, continue driving, if it
+returns 0, use expert policy instead. They propose \textbf{SafeDAgger} procedure.
+
+\valeriy{We should look into it!}
+
+\paragraph{Multi-Agent Imitation Learning (Le et al. ICML 17)}
+
+E.g. from tracking football players of one team. Problem:
+demonstration contains implicit information (e.g. role of the
+agent). How to use state representation? Authors propose combining
+imitation learning with unsupervised graphical model learning and
+inference.
+
+\begin{itemize}
+\item Fix graphical model to update imitation learning step
+  
+\item Fix imitation learning to solve optimization problem to update
+  graphical model.
+\end{itemize}
+
+\paragraph{Multi-model imitation learning InfoGail, Li et al NIPS 17}
+
+Problem: passing car on the left or on the right. Similar to GANs the
+problem of mode collapsing exists. Hence use ideas similar to
+Wassertstein GAN.
+
+
+\subsection{Theory of deep leaning by Sanjeev Arora}
+
+Problem: we cannot say much about the landscape and solution of the
+deep learning models.
+
+\subsubsection{Black-box analysis}
+
+To ensure descent, take small steps determined by smoothness
+$\nabla^2f(\theta) \leq \beta^t$. Since second derivative high means
+gradient oscillates a lot.
+
+Claim: ``As long as gradient is large, we are making progress.'' 
+
+Problem of sudden points: can be overcame by adding noise to the
+gradient (Jin et al 17), e.g. when using SGD, which ads stochastic
+noise anyway. Hence, we can use analysis of random walk to show that
+we can escape all saddle points and achieve approx 2nd order minimum.
+
+What about second order optimization? Pearlmutter'94 showed that
+$\nabla^2f$ can be computed in linear time. We can use approximate of
+the Hessian by a Taylor series and use finite truncation to achieve
+2nd order asymptotic convergence. However, empirically doesn't seem to
+lead to any better results than SGD.
+
+\subsubsection{Non-black box analyses}
+\label{sec:non-black-box}
+
+Need to put assumptions on structure of the NN and sub-cases of depth 2
+nets (one hidden layer between input and output).
+
+\begin{itemize}
+\item Matrix factorization for rank $r$ matrices $\Rightarrow$
+  for this problem all local minima are global minima.
+  
+\item For multi-layer nets results exist only for linear nets. 
+\end{itemize}
+
+\subsubsection{Overparametrization and generalization theory}
+\label{sec:overp-nand-gener}
+
+Why is it a good idea to train VGG19 on CIFAR (50K samples)? Why no overfitting observed?
+Experiments shows that overparametrization seems to help optimization.
+
+General belief: tuning nobs eliminate ``excess capacity''. However,
+experiments show that NN still can fit on corrupted data (Zhang et
+al. 17) hence excess capacity still exists.
+
+The same excess capacity also exists in linear models! See also \cite{belkin18a}
+
+\paragraph{Effective capacity} Roughly, log of the number of a priori
+models. Rough analogy: if a system exhibits $2^k$ states, it has $k$ bit memory.
+
+\textbf{Generalization theory} usually has the form
+$$\text{Test loss} - \text{training loss} \leq \sqrt{\frac{N}{m}}.$$
+
+\paragraph{Flat minima} generalize better empirically (Keskar et al
+16). Intuitive flat minimum has lover description length (fewer
+number of possible models account for sharper minima).
+
+Non-vacuous estimate of ``true capacity'' has proved elusive. 
+He presents a diagram where number of paper were significantly
+estimating the capacity coming closer and closer to the number of
+parameters on VGG19. Paper presented at ICML \cite{arora18b} observes
+that a deep net layer ``rejects'' noise injected on the previous layers. 
+
+Paper above shows that we can compress a linear deep net based on its
+eigenvalues from the case where $\#\text{parameters} \gg \#\text{samples}$ to $\#\text{parameters}
+\ll \#\text{samples}$
+
+\subsubsection{Theory of GANs}
+\label{sec:theory-gans}
+
+Goals using large unlabeled dataset learn the image $\Rightarrow$
+code mapping. Typically modeled as learning joint probability $P(X,Z)$.
+
+GAN:
+\begin{enumerate}
+\item avoid log-likelihood objection as it favors outputting fuzzy images
+  
+\item Instead use deep learning model
+\end{enumerate}
+
+Equilibrium: generator windows with cost $\approx$ 0, discriminator cannot
+improve any further.
+
+Problem: mode collapse.
+
+New insight from theory: problem not wit
+number of training samples, but size of the discriminator (A, Ge
+liang, Ma Zhang ICML 17)
+
+Does this happen in the real life training? (A, Risteski, Zhang ICLR 18)
+If a sample of size $s$ has near/duplicate images with prob $> 1/2$
+ then distribution has only $s^2$ distinct images.
+
+Results: CelebA (200k face images) support of 250k images.
+
+Problem: joint probability has to be learned with a very high
+numerical probability\footnote{Calculations on the blog
+  offconverx.org.}
+
+\subsubsection{Application of the results in Text embedding}
+\label{sec:appl-results-text}
+
+Bag-of-word embedding leads to compressed sensing. The theory works on
+random matrices, which is not the case in the natural language. Use bases pursuit
+give very good results on the natural text (which has certain structure).
+
+Linear embedding work well in downstream tasks!
+
+More recent results: learn compressed representation using linear
+regression.  See comparison in Lageswaran and Lee 2018 (MC-QT and a
+la carte). 
+
+\valeriy{What to work on (suggestions for theorists) the last slides
+  are interesting for people who are willing to jump in.}
+
+\subsection{A Tour of Reinforcement Learning: The View from Continuous
+  Control by Benjamin Recht}\footnote{Ben also writes about it in his
+  blog on argmin.}
+\label{sec:optimization-control}
+
+Problem: RL are on highly controlled environments. Problems arrive
+when we move to more open environments when interact with outside
+world.
+
+Reinforcement learning is the study of how to use ast data to enhace
+the future manipulation of a dynamical system. RL or Control Theory
+depends on your backgroud.
+
+CT: continuous spaces and continuous time
+RL: discrete
+
+CT: availability of model derived from physics (no need to learn a
+model from data)
+RL: data is the key. data $\rightarrow$ action
+
+Goal: unify both camps.
+
+Main research challenge> wahat are the fundametal limits of learning
+systems that intercact with the physical environment?
+How well must we understand a system in order to cotrl it?
+
+Designing control systen, you pick a surrogate los function instead of
+original one. This is a part of the design process and is typically
+iteratively refined. Part of the analysis is to show that the cost
+function leads to the desired results.
+
+Problem is simple if $f$ is known: batch optimization or dynamic
+programming.
+
+Problem: what happens if you dont know the dynamics $f$? Let's
+reinvent Reinforcement Learning! As machine learners we don't need
+those stinking models!
+
+Oracle: You can generate $N$ trajectories of lenth $T$. Challenge: build a
+controller with smalles error with fixed sampling bunget $N \times T$.
+How many samples do we need to solve this problem?
+
+\paragraph{Recht's linearization principle} if a ML algorithm does crazy things when
+restricted to linear models, it's goint to do crazy things on complex
+nonlinear models too.
+
+\subsubsection{Model-based RL}
+
+Collect some simulation data. Fit \emph{dynamics} with supervised
+learning. Solve approximate minimization problem with respect to policy.
+
+\subsubsection{Approximate Dynamic Programming}
+
+Both the modethods and anlyses are complicated, but this is the core of
+classical RL. Sadly, if you don't already know it, this probably won't
+make a ton of sense until the sixth time you see it...
+
+Using Shur complement, things look simple for quadratic problems.
+
+ML compes into place when we use stochastic approximate Bellman Equation and use gradient
+descent. Hence, we get Q-Learning.
+
+
+\subsubsection{Direct Policy Search}
+
+Idea: \textbf{sampling to search}. 
+
+\begin{itemize}
+\item search over probability distributions
+  
+\item Use function approximation that might not capture optimal distribution
+\item Can build (incredibly high variance) stochastic gradient estimes
+  by sampling. gradient is expected of function values times gradient
+  of the probability distribution
+\end{itemize}
+
+\paragraph{Reinforce algorithm} Hence sample z, plug into the formula and handle it as stochastic
+gradient (for expected value).
+
+Problem: no information about $\Phi$ is used, hence linear functions and
+complicated functions are treated equally.
+
+Another idea: use finite differences to approximate derivatives that
+we cannot compute exactly. That is what Russians and Ben call
+\textbf{random search}.
+
+Problem with policy gradient: it uses only the 0-th order information
+of the cost function (???).
+
+Reinforce applied to either probemms does not depend on the
+dynamics. Both are derivate-free algorithms.
+
+\subsubsection{Sample complexity}
+\label{sec:sample-complexity}
+
+Comparison between descrete and continuous state problems
+
+Are the model-free methods giving an effective use of the informamtion
+that is given to us?
+
+
+Problem with dqn that the results are seemingly very unstable. (Some
+claims from the dqn blog here).
+
+\textbf{Remedy promised from model-based RL}
+
+
+\paragraph{Coarse-ID control} How to take the inperfectness of the model into account? Use Coarse-ID control.
+Build high-dimensional stats bounds for error to estimate how far our
+model is from the optimum. Design robus control for feedback loop.
+
+
+You can formulate \textbf{robust optimization problem} and convert it using
+triangle inequality to regularized QP.
+
+\emph{LQR is a work-horse. Many modern methods use it. But by itself it
+  might be not very intereseting.}
+
+\paragraph{Observation} Random search of linear policies outperformas deep lreinforcement
+lerning.
+
+Problem: Some people handle random seed as hyperparameter. How to get
+random number generator out of your hyperparameter search? This seems
+to be a non-trivial software engineering problem and the answer is unclear.
+
+\subsubsection{Model Predictive Control}
+\label{sec:model-pred-contr}
+
+MPC: Use the $Q$-function fo \emph{all} time steps.
+
+Plan for some time horizon, take one step, and ignore the rest of your
+planing. Correct your model after each step using short feedback loop.
+
+Ben shoes resold on the humonoid simulator. MPC sows some nice walking
+(Rosolia et al. 2016)
+
+\valeriy{Using coarse models. May be intereseting for what we are
+  doing at AD.}
+
+Ben suggest a new ``sexy'' name for systems that operate on open
+environment. He calls it \textbf{actionable intelligence}.
+
+\section{Wednesday}
+\label{sec:wednesday}
+
+\subsection{Invited Talk: AI and Security: Challenges, Lessons Learned
+and Future Directions by Dawn Song}
+\label{sec:invited-ai-security}
+
+
+\paragraph{How AI changes security landscape?}
+
+Dawn showed some examples:
+\begin{itemize}
+\item IoT with vulnerabilities from third-party code. How to discover
+  these vulnerabilities? Transform binary code using graph embedding
+  and use neural network for pattern matching. 
+\item Automatic agents for attack detection, analysis and
+  defence. 80\% of attacks start with social engineering attacks. How
+  to protect humans? AI enables chatbots for phishing detection.
+  
+\item Automatic verficiation of software sercurity. AI Agents to prove
+  theorems and verify programs (GamePad by DS together with Ilya
+  Sutskever and otehrs)
+\end{itemize}
+
+\paragraph{How security enables better AI}
+
+
+Attack AI to compromize integrity and confidantiality of the system.
+
+\subsubsection{Compromize Integrity}
+\label{sec:compromize-integrity}
+
+
+
+\begin{itemize}
+\item Compormising integrity: e.g. adversarial examples of traffic
+  sign recognition. Dawn and her group looked at effectiveness of
+  effectivenes of adversarial examples. Further examples include
+  visual question and answer (VQA), deep reinforcement learning,
+  GANs. Use GAN to generate adversarial examples (advGAN, stGAN)
+  \valeriy{nice idea with training GANs!}
+\end{itemize}
+
+There are over 100 paper proposing numerous defenses methods, however
+Dawn claims that today we have no strong defenses against adversarial
+examples.
+
+Securit of learning system
+\begin{itemize}
+\item software level: prevent software from hacker attack. This area
+  is well studied.
+\item learning level: we need to evaluate system under adversarial
+  events not only normal events. Differentiate between regression
+  testing and security testing. \valeriy{This is also very relevant
+    for AD!} Formal verification methods can help for reasoning about
+  symbolic programs. For non-symbolic programs (learning systems) we
+  still don't have sufficient methods. Traditional non-symbolic
+  methods don't apply here. Neural program synthesis is tackeled using
+  recursive approach (ICLR 2017, best paper award). Using recurseive
+  approach seems to give provability of generalization
+  properties. Further problem is compositional reasoning for
+  non-symbolic programs: 
+\item distributed level: how to let agents make good local decisions to achieve good
+  global decisions.
+\end{itemize}
+
+\subsubsection{Attack Confidantiality}
+\label{sec:confidantiality}
+
+Current frameworks insufficient for protecting privacy due to untrusted
+programs (program rewriting and verification), untrusted
+infrastrucutre (secure computation), or contain sensitive results
+(differential privacy)).
+
+\paragraph{Computation results}
+
+Do neural networks remeber training data? Caa attackes extract secrets
+in training data from querying learned models?
+
+Experiment with Google: they developed a method where attacker can
+query learned natural language models to extract sensitive information.
+
+To prevent the problem of data memorization, use differential private
+neural networks. 
+
+Problem: differential privacy has limited practical use in general
+settings. Apple and Google has deployed DP for special
+application. Hence, we need usabilitz, broad support and easy
+integration.
+
+\textbf{Chrous} automaticall rewrite input SQL queries into
+intrisically private queries. this should automatically produce
+differentially private results (joint work with Uber)
+
+\textbf{Optio}: privacy preserving shared analytics and machine learning
+pieines. Automatically rewrite ml pipelines to ensure differential
+privacy.
+
+\paragraph{Untrusted infrastructure}
+
+Problem: protect infrastructure from leaking sensitive information.
+
+\begin{itemize}
+\item Crypto-based computation. Difficult with HPC due to deteriaritng performance
+  
+\item Hardware-based: good performance. Use Trusted execution
+  environment (TEE). Program runs in \textbf{secure enclave} preventing
+  external processes from intrusion. 
+\end{itemize}
+
+They showed that NN can run in
+secure enclave with small losses in performance.
+
+Path to trstwroty secure enclase
+\begin{itemize}
+\item open soruce design to prvide transprencz and enable high
+assurance
+\item formal verfication
+\item secure supply-chain managemnet
+\end{itemize}
+
+They created RISC-5 plattform that is open source and will be
+pubslihes in Fall 2018. (???)
+
+\subsubsection{Misuse AI to attack other systems}
+\label{sec:misuse-ai-attack}
+
+Problem: users don't know what happens with their data, they are not
+getting paid for the data and they cannot take the data back.
+
+Status quo: big companies provide personolized services and virtual
+assistance, though their main goal is to maximize corprate profit. How
+to create software for virtual assistance that has as the goal to
+maximize user benefit.
+
+DS works on privacy-preserving smart contracts that run on top of
+blockchain platform. Contract spacifies the terms of use of user data
+(which data, which models to traing, etc) and can enforce these terms.
+
+Can be combined with secure computation, differential privacy etc.
+
+Application: \textbf{Kara} a privacy-preserving tokenized data marked for
+medical data on top of the oasis data platfrom.
+
+
+Announcement: \textbf{Oasis labs} was launched yesterday to build secure cloud
+application on top of the block-chain plattform.
+
+\subsection{Best Paper Award Talk: Obfusscated gradients give a false
+sense of security: circumventing defenses to adversarial examples by
+Nicholas Carlini}
+\label{sec:best-paper}
+
+We need to care about adversarial examples to make ML robust and
+better. ICLR 18 conted 13 total defense papers, 9 are white-box
+non-certified. Nick analysed those showing that 6 of them are broken
+and 1 is partially broken.
+
+7 of 9 iclr  defenses methods introduce obfuscated gradients. Problem:
+locally decision boundaries look as step function, hence classical
+gradient descent attack has problem. Nick showed how to ``fix'' the
+gradient descent by replacing problematic gradient function by their
+approximates that are useful enough and not problematic.
+
+\textbf{Problem: state-of-the-art evaluation methodology is not
+  correct}
+
+We should care in security: robustness agains the atacks \emph{targetting
+the defense}! The purpose of a defense evaluation is to \textbf{fail} to show
+the defense is \textbf{wrong}.
+
+Ideas on how to improve
+\begin{itemize}
+\item strive for simplicity over complexity of the defense
+  methods. (e.g. strive for smooth surfaces of the decision
+  boundaries)
+\item \textbf{Threat model}: the set of assumption of what advarsarial model
+  are and are not allowed to do. The trhead model must assume the
+  attacker has read the paper and knows the defender is using the
+  techniques to defend.
+\item Metrics for success: accuracy under existing threat models, more
+  permissive threat models.
+\end{itemize}
+
+Conclusions:
+\begin{itemize}
+\item we need more re-evaluation papers
+\item Learn to break defenses \textbf{before} you try to build them
+\item Currently interesting methods to break: (???)
+\end{itemize}
+
+Track prograss: \url{robust-ml.org}
+
+\subsection{Track: Parallel and Distributed Learning}
+\label{sec:track:-parall-distr}
+
+
+
+\subsubsection{Optimal Tuning for devided-and-conquer kernel ridge
+  regression with massive data by Ganggang Xu \cite{xu18f}}
+\label{sec:optim-tuing-devid}
+
+Goal: find regression parmeter $\lambda$ for proven optimal
+convergence (???).
+
+In practice, $\lambda$ can be chosen through generalized cross
+validation (GCV). However, computation requires $O(N^3)$ computation
+and and $O(N^2)$ in memory.
+
+General DnC idea: divide dataset in smaller parts, do GCV, estimate function and
+combine functions using average. Problem with picking the optimal
+$\lambda$ in this manner: averaging models reduces variance but not
+bias, hence $\lambda$s become incorrect (as GCV is design to strike
+the balance between bias and variance).
+
+Proposed idea: all $f$ share the same $\lambda$, overfit $f$ on the
+data (hence smaller bias and bigger variance, which is fine).
+
+Theoretic results: proposed method is equivalent to minimizing the
+true loss function.
+
+\valeriy{Question: how much to overfit data to get perfect balance
+  between bias and variance after averaging}
+
+Empirical resuls show improved performance on the million songs dataset.
+
+
+
+\subsubsection{Coded sparse matrix mulltiplication \cite{wang18e}}
+\label{sec:coded-sparse-matrix}
+
+Problme: straggler slow-down in block-parallel matrix-matrix
+computation in parallel environment (happens also because of skewed data).
+
+State-of-the-art: forward error correction  redundant computation of
+$(A_1+A_2)^TB$. This idea can be extended to many blocks of A. This
+iis colled coded distributed matrix multiplications. Different schemas
+exist. Yu at Nips 2017 proposed polynomial code, however it has
+problems for sparse matrices. How to design more efficient coding scheme?
+
+Proposed solution: design coding matrix M that is sparse and
+strucutred for low recovery threshold. 
+
+\valeriy{Inclusion-exclusion principle is working here?}
+
+
+\subsubsection{Towards more efficient stochastic decentralized
+  learning: faster convergence and sparse communication by Zabang Shen
+\cite{shen18a}}
+\label{sec:towards-more-effic}
+
+Problem: decentralized convex minimization problem: minimize the sum
+of distributed functions. Each function is a sum of q componetn
+functions. Communication between nodes connected in a certain
+topology.
+
+Proposed method: consensus algorithm by introducing matrix $W$ as
+adjacency matriix on the topology.  Solve the dual formulation (was
+done before). Improvement: consider the summation structure of the  cost function.
+
+
+
+
+\subsubsection{Faster derivative-free stochastic algorithm for shared
+  memory machines by Heng Huang \cite{gu18a}}
+\label{sec:fast-deriv-free}
+
+Problem: minimize function with additive structure where gradient
+computation of individual terms is impossible.
+
+State-of-the-art: finite difference method (he calls it zeroth-order
+method). AsySZO asynchronous stochastic zeroth order optimization to
+avaoid synchronziyation costs. Problem: slow convergence
+$O(1/\sqrt{T})$ due to large variance of the gradient. 
+
+Proposed method: AsySZO+ $O(\frac{1}{bT})$ with $b$ the size of the
+minibatch.
+
+
+\subsection{Optimization (non-convex, Bayesian)}
+\label{sec:optim-non-conv}
+
+\subsubsection{Asynchronous Decentralized Parallel Stochastic Gradient
+  Descent by Xiangru Lian \cite{lian18a}}
+\label{sec:asynchr-decentr-para}
+
+\paragraph{Context}
+ Distributed SGD in different decentralized topologies (not
+parameter server) with asynchronous updates. 
+
+\paragraph{Problem}
+Minimize time spend on communication.
+
+\paragraph{Proposed solution}
+Compute stochastic gradient based based on the staled information,
+update with randomly selected neighbour, update model bosed on the new
+data. Remove possible deadlocks by introducing active and passive
+workers (bipartite graph) that only send or receive data.
+
+The paper provides theoretical
+results based on multiple assumption bounding lipshitz constant,
+variance, spectral radius, etc. Based on the assumptionns authors can
+compute a convergence rates.
+
+Empirical results (Resnet50) suggests same convergence rate as
+synchronous parameter server.
+
+
+
+\subsection{signSGD: Compressed Optimization for non/convex problems
+by Jeremy Berstein  \cite{bernstein18a}}
+\label{sec:signsgd:-compr-optim}
+
+signSGD means only take sign of the gradient.
+
+\paragraph{Motivation}
+Minimize communication in parameter server setting using gradient
+compression. How to aggregate signs? Do majority vote (sign of the sum
+of the signs)!
+
+signSGD is related to Adam and hence understanding signSGD helps to
+understand Adam
+
+$$sign(g_k) = \frac{g_k}{\sqrt{g_k^2}}$$
+
+Does it converge?  Works in high dimensions? Scales over the number of
+machines?
+
+For certain cost functions signSGD has the same properties as SGD.
+Assumptions: coordinante-wise bounded variance and lipshitz
+smoothness, objective function has lower bound.
+
+Theoretical bounds seems to be very similar form if we use a differnt norm
+for SGD and sign SGD.
+
+Empirical results suggest that signSGD and Adam have very similar
+performance on Imagenet.
+
+\valeriy{Sounds interesting. What is the intuition for using signs
+  only? 72}
+
+
+
+\subsubsection{BOHB: Robust and Efficient Hyperparameter Optimization
+  at Scale \cite{falkner18a}}
+\label{sec:bohb:-robust-effic}
+
+
+\valeriy{Unfortunately, I jumped through tracks and missed the
+  beginning. Need to check out the poster afterwards. \#157}
+
+
+
+\subsubsection{Alternative view: when does SGD escape local minima? \cite{kleinberg18a}}
+\label{sec:when-does-sgd}
+
+\paragraph{Observation}
+For noisy cost function SGD seems to work better than simple GD
+
+\paragraph{Contribution}
+SGD uses expected full gradient in the neighborhood determined by the
+noise. Hence, similar to convolving cost function with noise,
+which make it more smooth and eliminates small local minima.
+
+\valeriy{I think this works only if global minima are broader then local minima}
+
+Assumption: if we can do convolution for cost function with noise with
+SGD, then the function if one-point convex. In this case SGD will
+converge in the area of the global minimum (???)
+
+Empirical results seem to confirm the assumptions on Cifar10 and
+Resnet and Densenet.
+
+\valeriy{Practical application is unclear}
+
+\subsubsection{Escape Saddles with Stochastic Gradient by Hadi
+  Daneshmand \cite{daneshmand18a}}
+\label{sec:escape-saddles-with}
+
+
+Idea: inject asinotropic noise  to escape saddle points. Does it
+required or does SGD already has enough noise?
+
+\subsection{Reinforcement Learning}
+\label{sec:reinf-learn-2}
+
+
+
+\subsubsection{Self-consisten trajectory autoencoder by Andrew Liu \cite{co-reyes18a}}
+\label{sec:self-cons-traj}
+
+Context: introduce hierarchy in RL actions.
+
+Use state decoder to identify state (supervised learning). Use policy
+decoder for reinforcement learning.
+
+Use model predictive control in latent space for space decoder.
+
+Seems to combine long-term and short-term planing
+
+\valeriy{Worth looking into. Poster \# 15 }
+
+\subsubsection{Inference based policy gradient method for learning
+  options \cite{smith18a}}
+\label{sec:infer-based-policy}
+
+
+Learning abstract behaviors in reinforcemenet learning. Abstractions
+difficult to specify by hand.
+
+Abstractions specified as options over MDP in hierarchical fashion.
+
+Contribution: infer which option was active at any step insted of
+remembering it.
+
+Advantage of the method: interpretability of the results.
+
+\subsection{Optimization (combinatorial)}
+\label{sec:optim-comb}
+
+\subsubsection{Beyond 1/2 approximation for submodular maximization on
+  massive data streams}
+\label{sec:beyond-12-appr}
+
+Submodular functions satisfy property of deminishing returns.  Problem
+considered: submodular maximization with coordinality constraint.
+
+Problem: greedy algroithms are inpractical on data streams. How to
+summarize data on the fly?
+
+Previous work: Sieve-streaming algorithm gives 0.5--epsilon
+approximation guarantee.
+
+Can Sieve-streaming beat 1/2 in random streams? No for certain class
+of streams.
+
+Suggestions: new algorithm SALSA. Main idea: adaptive threshold based
+on where in data we are, e.g. balanced (uniform distribution) or dense
+(something like gaussian distribution). Since I don't know the data
+structure, I run both algorithm variants simultaniously.
+
+Empirical results show that SALSA is very close to the greedy performance.
+
+
+\subsubsection{Scalable deletion-robust submodular maximization: data
+  summarization with privacy and fainress constraints}
+\label{sec:scal-delet-sobm}
+
+Data summarization: extract small representative set of a
+very large dataset.
+
+\valeriy{This is also relevant for data collection fleet}
+
+Problem: If some elements were deleted, e.g. data privacy, then set is
+not representative anymore. Hence deletion-robustness is needed. 
+
+Again, we have submodular optimization with coordinality
+constraints. Additional contraint that the elements cannot be in the
+subset $D$ of deleted data.
+
+Problem: greedy is not robust. Idea: only add elements to you solution
+only if you have many elements with similar marginal values. Add this
+elements randomly.
+
+To get approximation, start with very high threshold and lower
+threshold as you proceed. Keep the not selected elements in core-set
+until they get deleted.
+
+We can still achieve $1/2-\epsilon$ aproximation on the optimality.
+
+
+
+
+\subsubsection{Data summarization at scale: a two-stage submodular
+  approach \cite{mitrovic18a}}
+\label{sec:dat-summarization-at}
+
+Two-stage submodularity
+
+Recent work: replacement greedy (Stan et al. ICML 2017)
+New idea: replacement streaming (add if elements are over certain
+thershold)
+
+Further focus of the work: distributed algorithm and accelerated
+distributed algorithm.
+
+\valeriy{Are you updateing the marginal return of the new elements
+  based on the current set? How to do it? I should look into the
+  paper. \#97}
+
+\subsection{Optimization (convex)}
+\label{sec:optimization-convex}
+
+\subsubsection{the power of interpolation by Mikhail Belkin \cite{ma18a}}
+\label{sec:power-interpolation}
+
+Idea: interpolation results in fast SGD.
+
+Effect of batch size for work of SGD in different regimes.
+
+\valeriy{Seems insightfull but difficult to grasp at the frist
+  glance. Need to check the paper.}
+
+In linear cases they show that overparametrization makes it easier to
+interpolate.
+
+\valeriy{Check out Ruslan Salakhadinovs tutorial on deep learning}
+
+SGD on GPU is $\approx 10^7$ faster than GD on CPU!
+
+What about generalization? This is still an open research topic.
+
+\subsubsection{Fast Variance reduction method with stochastic batch
+  size \cite{liu18f}}
+\label{sec:fast-vari-reduct}
+
+\paragraph{Problem}
+how to reduce the variance of gradients in minibatch SGD?
+Use SAGA method instead of SGD.
+
+Consider expectation of the minibatch size changing with convergence rate.
+ 
+Results: If optimize with respect to learning rates, mMinibatch size 1 results in the best convergence rates. \valeriy{not surprinsingly}
+Now, let's optimize with respect to the running time (meaning, include
+IO access, cache, etc.) Bigger batch size cooresponds to bigger
+minibatch size. The method shows stable results independent of the
+regularization ($\ell_1$ and $\ell_2$).
+
+
+\subsection{Adversarial Learning}
+\label{sec:adversarial-learning}
+
+\subsubsection{Synthesizing Robust Adversarial Examples}
+
+\valeriy{Is it the one rthat wone best paper award?}
+
+Do advarserial examples work in the real world? Maybe, maybe
+not. Depending on the papers. Often zoom, change in perspective
+etc. change back to the correct classification.
+
+\paragraph{How to design robust adversarial examples that work in
+  multiple scenarios}
+
+Idea: randomly transform algorithm before classification, hence to get
+adversarial examples invariant under transformation. If transformation
+function is differentiable, the gradient descent still worlds.
+
+Problem: can this work in 3D?
+
+Yes. We need 3d renderer and adversarial algorithm controlling the
+texture generation. Renderring process has to be differentiable. This
+works because we can see renderer as a linear transformation that maps
+posistion of the texture to the positions of rendered object. It can
+be further extended to lighting etc.
+
+He showed a video with 3D printed model of a turtle that is classifed
+as ``rifle''. \valeriy{nice!}
+
+Hence, defenses based on randomized input transformation are
+insecure. Adversarial examples and objects are a physical-world
+problem \valeriy{Booth \# 73.}
+
+\subsubsection{Dangers of evaluating against weak attacks \cite{uesato18a}}
+\label{sec:dang-eval-against}
+
+Problem: metric that we care about and metric that we can compute are
+not the same.
+
+Found that true adversarial robustnes is ofte 0 when evaluated agianst
+the strongest attacks.
+
+How to improve attacks? Improve optimizers (optimize agains the
+original model, e.g. using graident free optimizers if needed), optimize wrt true loss.
+
+\section{Thursday}
+\label{sec:thursday}
+
+\subsection{Best Paper Award: Delayed Impact of Fair Machine Learning by Lydia T. Liu \cite{liu18c}}
+\label{sec:delayed-impact-fair}
+
+
+Fairness definition grows intereset and is fuzzy: 21 Definitions of fairness (Narayanan 2018)
+
+\paragraph{Research Question}
+will fair ml systems make ``protected groups'' better off?
+
+Bank loan example shows that applying fairness criteria actually has
+negative impact on the protected groups!  The paper generalizes this
+finding for different fairness criteria.
+
+Two fairnes criteria considered: demographic parity and equal
+opportunity.
+
+\paragraph{Results}
+under minld assumptions Delayed impact is a concave function. This
+curve has three regimes of intereset: relative imrpovement, relative
+harm, active harm. Where does fairness criteria put us on this curve?
+Theorem shows, they can put us anywhere on this curve (but probably
+not really in active harm regime)!
+
+Empirical results on 300\,000+ transitionUni trasrisk scores from 2003
+to predict default risk.  Compute overcome curves and analyze delazed
+impact for different fairness criteria.  Maximim utility improves
+score, demographic parity decreases (overaccepting), equal opportunity
+improves score (not overaccepting).
+
+\paragraph{Conclusions}
+Outcome curves provide a way to deviate from maximum utility while
+improving outcomes. Need for domain-specific models of delayed
+impact (contnext sensitive nature of fairness in ML).
+
+\subsubsection{Learning memory access patterns by liad hashemi \cite{hashemi18a}}
+\label{sec:learn-memr-access}
+
+Liad is working at Google and so they focus on search as application.
+
+\paragraph{Problem}
+We are at the break of Moores law due to the slow memory access.
+At Google most of the time is spend in memory access.
+
+Solution: prefetching. But how to know what to prefetch? Current
+solution: create tables of what happened in the past and predict what
+happens in the future. Important metrics: precision, recall,
+timeliness (predic tthe address at the correct time).
+
+From ML perspective prefetchin glooks like an NLP time of
+problem. Very challenging due to large address space (very sparse
+data), but rich structure in the sparse part (random access,
+sequential access etc.)
+
+Idea: consider address deltas instead of addresses as the classes
+(works well for simpler applications but not for search).
+
+Idea: split address space into partiions using clustering. Compute deltas
+in indivdiual clusters. This results in managing number of classes
+even for applications like search.
+
+Data: time series of program coutners and deltas.
+
+Models: two kinds of LSTM.
+
+Results: ML prefetches is better than standard ones. As a side note,
+the models generate and interpretable visualisation of programm
+mmemory access behavior.
+
+\subsection{Residual unfairness of fair machine learning from
+  preidcted data}
+\label{sec:resid-unfa-fair}
+
+Problem: unbalances training data, e.g. when white population is not
+controlled by police, dataset has a bias towards black population.
+
+Contribution: fairness adjustment method calles equality of
+opportunity (residual disperities between true positive rated in the
+target populations).
+
+\subsection{Improving Gaussian mechanis for differential privacy
+  analytica calibration and optimal denoising}
+\label{sec:impr-gauss-mech}
+
+\paragraph{Problem}
+ achieve differential privacy by adding gaussian perturbation
+to the input data.
+
+\paragraph{Contribution}
+ Analysis of how to find the minimum variance to satisfy certain
+conditionn on differential privacy.
+
+Code for binary search of optimal variance is available on github
+
+\subsection{Improving of privacy and accuracy of ADMM-based
+  distribtuted algorithms}
+\label{sec:impr-priv-accur}
+
+\paragraph{Problem}
+Perform collective learning tasks for data with different owners,
+locality, etc. How to accomplish the computational tasks withouth
+jeopardizing privacy?
+
+Paper considersr empriical risk minimization in distributed manner as
+usual with ADMM (introduce equality constraint).
+
+Primal variables have to be broadcasted, hence there is a privacy
+leakage, which tends to accumulate. How to make this procedure private?
+
+\paragraph{Related work}
+Add neuse to the process (differential privacy). Dual permutation,
+primal perturbation
+
+
+\paragraph{Contribution}
+Add penalty term instead of noise. Use private variable $\eta$ instead
+of sharing it among all processes. Paper provides theretical and
+numerical results. Intuition: Control noise and step size in different
+directions.
+
+\paragraph{Results:}
+simultaniously improve performancee and privacy of the algorithm.
+
+
+\subsection{Improved large-scale graph learning through ridge spectral
+  sparsification \cite{calandriello18a}}
+
+\valeriy{check out the poster \# 761}
+
+\subsection{Parallel and streaming algorithms for k-core
+  decomposition}
+\label{sec:paralle-land-stre}
+
+Problem: detection of dense structures in graphs (networks).
+
+Minimum density subgraph: subgraph where every node has at least certain
+degree.
+
+K-core is a maximal subgraph of minimum degree K.
+
+Application: hierarchical clustering. K-core naturally define the
+hierarchy on a graph.
+
+Sequential algorithm for solution is a simple greedy algorithm
+removing 1-degree nodes. How to do it in parallel?
+Solution: sketch for k-core decomposition.
+
+
+\subsection{Fast approximate spectral clusterin for dynamic netwroks}
+\label{sec:fast-appr-spectr}
+
+Problem: spectral clustering.
+
+Contribution: adjust compressive spectral clustering (CSC) for graphs that
+change over time. Also prove CSC approximates SC.
+
+Consider sequence of graphs (represent dynamic changes). Trick: copy a
+portion of eigenvectors from the past graph, recompute the other
+portion (works as long as the portion of the things that change is
+bounded).
+
+
+
+\subsection{Near optimal frequent directions for sketching dense and
+  sparse matrices by Zengfenf Huang \cite{huang18a}}
+\label{sec:near-optim-freq}
+
+\valeriy{Best paper award!}
+
+Sketch-and-solve pardigm: compute small sketch of matrix which
+presever certain properties. Then du expensive computations on sketch.
+
+Work considers covariance sketch matrices that preserver Grammarian
+($A^TA$) of the original matrix. Minimization of spectral norm of the
+remainder of grammarian matrix.
+
+Frequent directions method (Liberty'13): soft thersholding on singular
+values and keeping right signluar vectors (shrinking).
+
+Contribution for dense matrices: produce coarse FD, then refine it using adaptive
+sampling.
+
+Result: complexity of FD and matrix multiplication are almost the same.
+
+
+\subsection{Loss Decomposition for fast learning in large output
+   spaces \cite{yen18a}}
+\label{sec:loss-decomp-fast}
+
+\valeriy{Check out pster \#186}
+
+Large output spaces: language modelling, metric learning, etc.
+
+\paragraph{Problem:}
+gradient evaluation of loss function is very costly.
+Scores are computed by matrix-vector multiplication $Wx$ which is the
+most expensive operation. How to accelerate it?
+
+\paragraph{Main technique} dual decomposition loss and max inner
+product serarch (MIPS).  Loss can be decomposed over $B$ components at
+the cost of introducing $B$ variables $\lambda$.
+
+Experimental results: MegaFace 672k classed, 7 examples per
+class. Magnitudes of perrofmance imrpovement. 
+
+
+\subsection{Ultra large-scale feature selection using count-sketches \cite{aghazadeh18a}}
+\label{sec:ultra-large-scale}
+
+Problem: interpretability and feature selection for data set with very
+large set of features.
+
+Proposal: treat stochastic gradiens as a dta stream. use hash
+gradients into a count-sketch. Query top-k values in count-sketch and
+feed them into SGD.
+
+\valeriy{Nice! Can be used for sparse grids as well?!}
+
+
+\subsection{Approximate leave-one-out for fast parameter tuning in
+  high dimensions \cite{wang18m}}
+\label{sec:appr-leave-one}
+
+Problem: k-fold CV serious bis issue in high dimension. This doesnt
+happen with leave one out cv but it is very slow.
+
+Proposal: 
+
+\valeriy{Very cool! Need to chackout the poster \#75.}
+
+\subsection{Semi-supervised learning on data streams via temporal
+  label propogation}
+\label{sec:semi-superv-learn}
+
+
+\valeriy{Classify interesting data on the car. Application on
+  Autonomous Driving!!! Largely written by guys from Amazon. Poster \#
+  132}
+
+Problem: stream of data points, most are unlabeled, clussify those.
+
+Label Propogation is well-known method (???)
+
+Contribution: how extend the algorithm to the streaming
+setting. Compress data using star-mesh transform to remove
+uninteresting points.  
+
+\subsection{Composable Planning with Attributes \cite{zhang18k}}
+\label{sec:comp-plann-with}
+
+Idea: extract attributes from the state, plan the path that gets you
+to the desirted attribute state. Make first step, reevalute the state,
+etc.
+
+Instead of explicitly learning to solve multpile specific tasks, learn
+how to manipulate properties of interest.
+
+\valeriy{I didn't really understood the paper but the results seem to
+  be very! \#109}
+
+\subsection{Measuring abstract reasoning in neural networks
+  \cite{santoro18a}}
+\label{sec:meas-abstr-reas}
+
+\valeriy{Guys from deep mind}
+
+Problems based on Raven's progressive matrices used to measure IQ and
+abstract abilties, rely heavily on \emph{analogical} reasoning.
+
+Contribution include generating Raven's progression matrices for
+training and test sets and see how the algorithms perform on knowledge
+tranfert.
+
+Observation: if model has to identify rational behin the prediction,
+it tended to have better prediction performance.
+
+\subsection{GradNorm: Gradient Normalization for adaptive loss
+  balancing in deep multitask networks \cite{chen18a}}
+\label{sec:gradn-grad-nrom}
+
+A cute analogy with rabbit and tutrtles for fast and slow training
+tasks.
+
+Take-away: coupling gradients of different tasks helps with
+regularization of all tasks.
+
+\valeriy{Nice!}
+
+\section{Friday}
+\label{sec:friday}
+
+\subsection{Convergence guarantees for a class of non-convex and
+  non-smooth optimization problems}
+
+Convergence guarantees for non-convex non-smooth functions.
+
+General setup smooth-non-convex - convex - convex continuous 
+
+Method: (sub)-gradient descent
+
+Applications:
+\begin{itemize}
+\item best subset selection
+\item shape from shadow
+\end{itemize}
+
+\subsection{A prograssive batching l-bfgs method for machine learning}
+\label{sec:progr-batch-l}
+
+Adoptation of l-bfgs to stochastic setting. How to keep gradient
+variance small?
+
+\paragraph{Idea}
+
+\begin{itemize}
+\item Control sampling to minimize gradient variance 
+\item Use line search for step size selection.
+\item To compute gradient use gradient on the intersection of two
+  mini-batches (25\% overlap)
+\end{itemize}
+
+
+\paragraph{Results}
+Empirically, similarly to SGD but worst then variance reduction
+techniques.
+
+\valeriy{Results are not very convincing, as it converges at similar
+  number of iterations as Adam, but cost of individual iterations is
+  much higher}
+
+\subsection{Gradient primal-dual algorithm converes to second order
+  stationary psolutions for  nocncovenx distributed optimization \cite{hong18a}}
+\label{sec:gradient-primal-dual}
+
+Applications: e.g. consensus problem with ADMM
+
+Results: if variables are initialized at random, the algorithm
+converges to a second order stationary point with probability 1.
+
+\valeriy{The result is not surprinsing}
+
+\subsection{Efficient Audio Neural Synthesis \cite{kalchbrenner18a}}
+
+\valeriy{DeepMind and GoogleBrain}
+
+Problem: efficient sampling from a neural network (wave-net is too
+slow).
+
+Two factors: Flops and Memory bandwidth.
+
+\paragraph{Make smaller model?}
+Motivation: run on a single GPU. Idea: split into 8 fine bits and 8
+coarse bits and sample from those separtely. -> WaveRNN
+
+\paragraph{Subscaling}
+
+Generate multiple steps at the same time without breakng local dependencies.
+Idea: presample some dependencies and fill the gaps in
+parallel. Parallelization of up to 16x is possible!
+
+This further reduces memory bandwidth at slightly higher flots.
+
+\paragraph{Sparse WaveRNN}
+
+Make weight matrices in wavernn model sparse. Problem: sparsity
+reduces over training time.
+
+Insight: if we increase state size with RNN and make connections very
+sparse, we significantly increase the model quality.
+
+Hence, significant reduction on flows. Now wavenet can work on cpu no
+mobile devices.
+
+\subsection{Understanding and simplifying one-shot archtecture search
+  \cite{bender18a}}
+\label{sec:underst-simpl-one}
+
+\valeriy{Google Brain}
+
+Solutions: ENAS and SMASH.
+
+Contribution:
+\begin{itemize}
+\item simplified version of weight sharing without hypernetwork or RL
+  controller.
+  
+\item How can weights be shared across diverse architectures?
+\end{itemize}
+
+\paragraph{Idea:}
+ train one-shot model with redundant ops, evaluate candidate architerures
+ by removing ops.
+
+Stacking one-shot models leads to only linear growth of the search
+space.
+
+Once the best architecture is found, retrain it from scratch.
+
+\paragraph{Role of weight sharing in architecture search}
+
+Observations:
+\begin{itemize}
+\item best accuracies obstain by tuning on all possible ops
+
+\item can remove many ops and still get good accuracies
+  
+\item but which ops zou remove matters
+\end{itemize}
+
+Hypohesis: the more useful an op is, the more the one-shot model
+will rely on its output.
+
+The empirical experiments seem to verify the hypothesis.
+
+
+\subsection{Building machines that learn and think like pople by Josh
+  Tenenbaum}
+\label{sec:buld-mach-that}
+
+Intelligence is not only about finding patterns in data but also about
+explaining and understanding it, imagining things we could see but
+havent yet, problem solving and planning actions to make these things
+real, building new models.
+
+Goal: building machines that can learning like children.
+
+Many orginal ideas of AI were published in journals of pszchonoly and
+cognitive science and were engineered into proper solutions later.
+
+E. Spelke: children see world in terms of objects in 3-dimensional
+world, not as a small mechanism and many blank sheets.  L. Schultz:
+childrens learning is an active process of forming hypotheses about
+the world and testing those.
+
+How to caption this principles in machine learning?
+18-yr old can arleady do a lot of inference about the real world far
+beyond of what currently possible in robotics. Josh showed a cool
+video where a kid help adults with experiment by recognizing they he
+need to open the door without beying asked. 
+
+Tool: symbolic languages, probabilitc inteference and neural networks.
+This is an important tool when combined together in probabiliist
+programming languages (e.g. Pyro, ProbTorch, Gen).
+
+\paragraph{Idea:}
+ reverse engineer childrens thinking process by wrapping game
+graphics and physics engines in probabilistic framwworks.
+
+\subsubsection*{Where does learning comes into the picture?}
+
+Idea: Learning from sratch ``Probing physics knowledge using tools from
+developemtnal psychology'', ``Machine theory of mind'' (deep mind)
+
+\begin{itemize}
+\item learning to use the game engine oin your head: MarrNet (learning
+  to see objects), scene de-rendering (learning to se scenes) that
+  renders video into physics engine and use physics engine to
+  propagate in time
+  \valeriy{This is really nice, we need to check out the facebook ai paper}
+  
+\item Learning in the game engine: learning to model classs of objects \footnote{ learning a probabilistc generative
+  model in 3d shape and texture, visual object networks (ICCV accepted
+  by Zhu, We, et al.) }, one-shot learning, ...
+  
+\item learning the game engine itself
+\end{itemize}
+
+\subsection{The hidden vulnerability of distributed learning in Byzantium \cite{mhamdi18a}}
+\label{sec:hidd-vuln-distr}
+
+Byzantine failure model: poisoning, crash, bugs, latency, ... in
+distributed learning process
+
+Parameter server setting. Attacker sends incorrect gradient trying to
+mislead the system as much as possible. Threat model: attacker is imniscient but not
+omnipotent (attacher cannot falsify other messages). f: Byzantium (bounded). 
+
+\subsection{Extreme multi-label learning}
+\label{sec:extreme-multi-label}
+
+Context: up to millions of labels. data are sparse. many features and
+examples/item
+
+SoA: Parallelization or dimensionality reduction
+
+Our approach: splitting into subproblems (\textbf{CRaFTML})
+
+Tricks: ransom samplinig, random hashing, spherical k-means, average
+hashed featurs...
+
+Results: compared to SoA FastXML: consistently better.
+
+Implementation is in java and single threaded
+
+\valeriy{I guess there is some potential here in terms of efficient
+  algorithms. Poster \#102}
+
+
+\subsection{Attentian-based deep multiple instance learning}
+\label{sec:attentian-based-deep}
+
+Context: input is a set of object, the set is positive if at least one object
+is positive. How to classify unordered sets?
+
+Idea: use two soft attention layers for elements in set -> embedding
+of all elements in the set.
+
+Results: mnist-bags dataset (find if a datset contains a ``9''). Bio
+examples: identify cells belong to a certain class on the image.
+
+\subsection{Learning and memorization \cite{chatterjee18a}}
+\label{sec:learn-memor}
+
+Observation: neural networks can memorize large amounts of random data
+(Zhang et al. ICLR 17)
+
+If nets can memorize random data why do they generalize on real data?
+
+\paragraph{Question:}
+ Can memorization alone lead to generalization?
+
+Idea: build a network of small lookup tables, arrange these
+lookup-tables randomly.
+
+This does work!
+
+$k$ controls brute force memorization. It ovefitts the data as it goes
+up on real data. Random data is learned a bit slower.
+
+\valeriy{Check out the paper}
+
+\subsection{NN calibrarion with kernel mean embedding}
+\label{sec:nn-calibrarion-with}
+
+carlibartion: reliabilit and interpretability of model confidence.
+
+Problem: modern neural networks are uncullibrated,
+over-confident. (Guo et al. ICML 17)
+
+\subsection{WSNet}
+\label{sec:wsnet}
+
+Idea: optimization of the convolution algorithm.
+
+Results: SoundNet  (8 conv layers): up to 180x smaller model size with
+0.2\% accuracy loss.
+
+
+
+\subsection{StrasseNet: deep learning with multiplication budget \cite{tschannen18a}}
+\label{sec:strass-deep-learn}
+
+Problem: high computational complexity and high energy consumption of
+current DNN
+
+Our appraoch: reducing the number of multiplications as ga giding
+princliple. This strategy led to many fast algorithms: strasens matrix
+multiplicaiton, winograd filter based convolution.
+
+Idea: use approximate matrix multiplications at significantly lower
+costs. Associate A with wit weights and B with activations and learn
+WA, WB WC of \emph{sum-product-network} with $r \ll nmk$.
+
+How to do convolution? Compress sum-product-networks to subsets of 2D
+convolutions. 
+
+How to learn $W_A$, $W_B$, $W_C$? Quantize them with methods described by Le et
+al. 2016. 
+
+Results:
+\begin{itemize}
+\item ResNet-18 on ImageNet: significant reuction of multipliciations.
+  With knowledge disctilation one can match accuracy of full precision
+  model with 200x less multiplications.
+\item Character-CNN language model on Penn Tree Bank. Again with noise
+  distilation one can math FP perplexity reducing multiplications by
+  200x-300x
+\end{itemize}
+
+\valeriy{nice! code available online. Open question: can you simplify
+  other operations as well?}
+
+
+
+
+
+
+
+
+
+%\printbibliography
+\bibliography{bibliography,references}
+\bibliographystyle{apalike}
+
+
+
+\end{document}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
